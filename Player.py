@@ -47,6 +47,11 @@ class Player:
             return score, None
 
         valid_moves = board.get_valid_moves()
+
+        # Reorder moves to prioritize center columns
+        center = board.cols // 2
+        valid_moves.sort(key=lambda col: abs(center - col))
+
         best_move = None
 
         if maximizing:
@@ -80,7 +85,7 @@ class Player:
             return min_eval, best_move
 
     def minimax_with_alphabeta(self, board, depth, maximizing, alpha, beta, indent=0):
-        """Minimax with Alpha-Beta pruning"""
+        """Minimax with Alpha-Beta pruning, prioritizing the center column"""
         prefix = "    " * indent
         print(f"{prefix}{'Maximizing' if maximizing else 'Minimizing'} at depth {depth}")
         board.print_board()
@@ -92,6 +97,9 @@ class Player:
             return score, None
 
         valid_moves = board.get_valid_moves()
+        center_col = board.cols // 2
+        valid_moves.sort(key=lambda x: abs(x - center_col))  # Prioritize center column
+
         best_move = None
 
         if maximizing:
@@ -135,9 +143,9 @@ class Player:
 
             print(f"{prefix}Best score for minimizing: {min_eval}, Move: {best_move}\n")
             return min_eval, best_move
-
+            
     def expected_minimax(self, board, depth, maximizing, indent=0):
-        """Expected Minimax (Probabilistic)"""
+        """Expected Minimax (Probabilistic) with Center Column Priority"""
         prefix = "    " * indent
         print(f"{prefix}{'Maximizing' if maximizing else 'Minimizing'} at depth {depth}")
         board.print_board()
@@ -149,6 +157,9 @@ class Player:
             return score, None
 
         valid_moves = board.get_valid_moves()
+        center_col = board.cols // 2
+        valid_moves.sort(key=lambda x: abs(x - center_col))  # Prioritize center column
+
         best_move = None
         best_score = float('-inf') if maximizing else float('inf')
 
@@ -156,7 +167,6 @@ class Player:
             # Calculate expected score considering the probabilities
             expected_score = 0
             # Probabilities: 0.6 for the chosen column, 0.2 for left or right
-            # Check if left, right, or the column itself is valid and evaluate
             for i, prob in zip([0, -1, 1], [0.6, 0.2, 0.2]):  # current, left, right
                 target_col = col + i
                 if 0 <= target_col < board.cols and board.valid_move(target_col):
@@ -178,3 +188,6 @@ class Player:
 
         print(f"{prefix}Best expected score: {best_score}, Move: {best_move}\n")
         return best_score, best_move
+ 
+
+
