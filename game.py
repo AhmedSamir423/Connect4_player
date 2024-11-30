@@ -1,3 +1,5 @@
+import Board
+import Player
 class Game:
     def __init__(self, algorithm):
         self.board = Board()
