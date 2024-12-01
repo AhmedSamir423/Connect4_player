@@ -65,3 +65,8 @@ class Board:
         ai_score = self.count_connected_fours(ai_symbol)
         opponent_score = self.count_connected_fours(opponent_symbol)
         return ai_score - opponent_score
+    
+    def get_scores(self, ai_symbol, opponent_symbol):
+        ai_score = self.count_connected_fours(ai_symbol)
+        opponent_score = self.count_connected_fours(opponent_symbol)
+        return ai_score , opponent_score
