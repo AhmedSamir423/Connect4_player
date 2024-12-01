@@ -72,27 +72,26 @@ class Connect4GUI:
                 self.cell_labels[row][col].config(text="⚪" if cell_value == 0 else ("🔴" if cell_value == 1 else "🟡"))
 
     def check_winner(self):
-        # Only check for connected 4 when the board is full
+        # Only check for connected 4 if board is full
         p1_score = self.board.count_connected_fours(self.game.player1.symbol)
         p2_score = self.board.count_connected_fours(self.game.player2.symbol)
 
-        if self.board.is_full():
+        if self.board.is_full():  # Check if the board is full
             if p1_score > p2_score:
                 winner = self.game.player1.name
                 message = f"Game Over! Winner: {winner}"
-                self.game.player1.score += 1  # Increment score for player 1
             elif p2_score > p1_score:
                 winner = self.game.player2.name
                 message = f"Game Over! Winner: {winner}"
-                self.game.player2.score += 1  # Increment score for player 2
             else:
                 message = "Game Over! It's a draw!"
 
-            messagebox.showinfo("Game Over", message)
-            self.update_score_labels()
-            self.disable_buttons()
+            messagebox.showinfo("Game Over", message)  # Show game over message
+            self.disable_buttons()  # Disable buttons after game ends
             return True
-        return False
+
+        return False  # Return False if the game is not over
+
 
     def update_score_labels(self):
         self.human_score_label.config(text=f"Human Score: {self.game.player1.score}")
