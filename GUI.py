@@ -1,90 +1,120 @@
 import tkinter as tk
 from tkinter import messagebox
+import numpy as np
+
 from Game import Game
 
-class ConnectFourGUI:
-    def __init__(self, game):
+class Connect4GUI:
+    def __init__(self, root, game):
+        self.root = root
         self.game = game
-        self.window = tk.Tk()
-        self.window.title("Connect Four")
-        
-        # Create a canvas to draw the board
-        self.canvas = tk.Canvas(self.window, width=700, height=600)
-        self.canvas.pack()
+        self.board = game.board
+        self.current_player = game.current_player
+        self.buttons = []
+        self.create_widgets()
 
-        # Set up the grid
-        self.cell_size = 100
-        self.create_board()
+    def create_widgets(self):
+        # Create buttons for column selection
+        for col in range(self.board.cols):
+            btn = tk.Button(self.root, text=f"↓", command=lambda c=col: self.drop_disc(c), height=2, width=4)
+            btn.grid(row=0, column=col, sticky="nsew")
+            self.buttons.append(btn)
 
-        # Add buttons for each column
-        self.buttons_frame = tk.Frame(self.window)
-        self.buttons_frame.pack()
+        # Create board cells
+        self.cell_labels = []
+        for row in range(self.board.rows):
+            row_labels = []
+            for col in range(self.board.cols):
+                lbl = tk.Label(self.root, text=".", font=("Arial", 24), width=4, height=2, bg="blue", fg="white", relief="ridge", borderwidth=2)
+                lbl.grid(row=row + 1, column=col, sticky="nsew")
+                row_labels.append(lbl)
+            self.cell_labels.append(row_labels)
 
-        # Create buttons for each column
-        self.column_buttons = []
-        for col in range(self.game.board.cols):
-            button = tk.Button(self.buttons_frame, text=f"Column {col + 1}", 
-                               command=lambda c=col: self.make_move(c))
-            button.grid(row=0, column=col, padx=5)
-            self.column_buttons.append(button)
+        # Add a reset button
+        reset_btn = tk.Button(self.root, text="Reset", command=self.reset_game, height=2, width=10)
+        reset_btn.grid(row=self.board.rows + 1, columnspan=self.board.cols, sticky="nsew")
 
-    def create_board(self):
-        # Draw the empty grid for the board
-        for row in range(self.game.board.rows):
-            for col in range(self.game.board.cols):
-                x1 = col * self.cell_size
-                y1 = row * self.cell_size
-                x2 = x1 + self.cell_size
-                y2 = y1 + self.cell_size
-                self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", fill="lightblue")
+        # Add score labels
+        self.human_score_label = tk.Label(self.root, text="Human Score: 0", font=("Arial", 14))
+        self.human_score_label.grid(row=self.board.rows + 2, column=0, sticky="w")
+        self.ai_score_label = tk.Label(self.root, text="AI Score: 0", font=("Arial", 14))
+        self.ai_score_label.grid(row=self.board.rows + 2, column=1, sticky="w")
 
-    def update_gui(self, row, col, player_symbol):
-        # Determine the color based on the player symbol
-        color = "red" if player_symbol == 1 else "yellow"
-        
-        # Draw the new disc in the corresponding cell
-        self.canvas.create_oval(
-            col * self.cell_size + 10, 
-            row * self.cell_size + 10,
-            (col + 1) * self.cell_size - 10, 
-            (row + 1) * self.cell_size - 10,
-            fill=color, outline=color
-        )
+    def drop_disc(self, col):
+        if self.board.valid_move(col):
+            self.board.play_disc(self.current_player, col)
+            self.update_board()
+
+            # Check if the game is over
+            if self.check_winner():
+                return
+
+            # Switch players
+            self.current_player = self.game.player2 if self.current_player == self.game.player1 else self.game.player1
+
+            # If AI, make a move automatically
+            if self.current_player.is_ai:
+                self.root.after(500, self.ai_move)
+
+        else:
+            messagebox.showinfo("Invalid Move", f"Column {col} is full. Try a different one!")
+
+    def ai_move(self):
+        self.current_player.make_move(self.board)
+        self.update_board()
+        if not self.check_winner():
+            self.current_player = self.game.player2 if self.current_player == self.game.player1 else self.game.player1
+
+    def update_board(self):
+        for row in range(self.board.rows):
+            for col in range(self.board.cols):
+                cell_value = self.board.board[row][col]
+                self.cell_labels[row][col].config(text="⚪" if cell_value == 0 else ("🔴" if cell_value == 1 else "🟡"))
+
+    def check_winner(self):
+        # Only check for connected 4 when the board is full
+        p1_score = self.board.count_connected_fours(self.game.player1.symbol)
+        p2_score = self.board.count_connected_fours(self.game.player2.symbol)
+
+        if self.board.is_full():
+            if p1_score > p2_score:
+                winner = self.game.player1.name
+                message = f"Game Over! Winner: {winner}"
+                self.game.player1.score += 1  # Increment score for player 1
+            elif p2_score > p1_score:
+                winner = self.game.player2.name
+                message = f"Game Over! Winner: {winner}"
+                self.game.player2.score += 1  # Increment score for player 2
+            else:
+                message = "Game Over! It's a draw!"
+
+            messagebox.showinfo("Game Over", message)
+            self.update_score_labels()
+            self.disable_buttons()
+            return True
+        return False
+
+    def update_score_labels(self):
+        self.human_score_label.config(text=f"Human Score: {self.game.player1.score}")
+        self.ai_score_label.config(text=f"AI Score: {self.game.player2.score}")
+
+    def disable_buttons(self):
+        for btn in self.buttons:
+            btn.config(state=tk.DISABLED)
+
+    def reset_game(self):
+        self.board.board = np.zeros((self.board.rows, self.board.cols), dtype=int)
+        self.current_player = self.game.player1
+        self.update_board()
+        self.update_score_labels()  # Reset score labels
+        for btn in self.buttons:
+            btn.config(state=tk.NORMAL)
 
 
-    def make_move(self, col):
-        if self.game.game_over:  # Check if the game is over
-            return
-
-        # If it's a human player's turn, get the column from the button press directly
-        row = self.game.current_player.make_move(self.game.board)  # Pass the board object
-        if row is not None:  # If the move was successful (row returned)
-            self.update_board(row, col)  # Update the board on the GUI
-            if self.game.is_game_over():  # Check if the game is over after the move
-                self.display_winner()  # Display the winner
-
-
-
-
-
-
-
-    def display_winner(self):
-        # Show a message box with the winner
-        winner = "Player 1" if self.game.current_player == 2 else "Player 2"
-        messagebox.showinfo("Game Over", f"{winner} wins!")
-
-    def reset_board(self):
-        # Clear the board from the canvas
-        self.canvas.delete("all")
-        self.create_board()
-
-    def run(self):
-        self.window.mainloop()
-
-
-# Assuming Game class is available as provided
+# Running the GUI application
 if __name__ == "__main__":
-    game = Game(algorithm="minimax")  # Choose AI algorithm
-    gui = ConnectFourGUI(game)
-    gui.run()
+    root = tk.Tk()
+    root.title("Connect 4")
+    game_instance = Game(algorithm="minimax")  # Use minimax or alphabeta as desired
+    app = Connect4GUI(root, game_instance)
+    root.mainloop()
