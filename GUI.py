@@ -1,17 +1,43 @@
 import tkinter as tk
 from tkinter import messagebox
 import numpy as np
-
 from Game import Game
 
+
 class Connect4GUI:
-    def __init__(self, root, game):
+    def __init__(self, root):
         self.root = root
-        self.game = game
-        self.board = game.board
-        self.current_player = game.current_player
+        self.game = None  # Initialize as None; will be set after algorithm selection
+        self.board = None
+        self.current_player = None
         self.buttons = []
+        self.algorithm = None
+        self.setup_algorithm_selection()
+
+    def setup_algorithm_selection(self):
+        """Setup initial screen for algorithm selection."""
+        label = tk.Label(self.root, text="Select AI Algorithm", font=("Arial", 16))
+        label.pack(pady=10)
+
+        for algo in ["minimax", "alphabeta", "expected_minimax"]:
+            btn = tk.Button(
+                self.root, text=algo.capitalize(),
+                command=lambda a=algo: self.start_game(a),
+                height=2, width=15
+            )
+            btn.pack(pady=5)
+
+    def start_game(self, algorithm):
+        """Start the game with the chosen algorithm."""
+        self.algorithm = algorithm
+        for widget in self.root.winfo_children():
+            widget.destroy()  # Clear the algorithm selection screen
+
+        self.game = Game(algorithm=algorithm)
+        self.board = self.game.board
+        self.current_player = self.game.current_player
         self.create_widgets()
+
         if self.current_player.is_ai:
             self.ai_move()
 
@@ -20,13 +46,16 @@ class Connect4GUI:
         for col in range(self.board.cols):
             self.root.grid_columnconfigure(col, weight=1, uniform="col")
 
-        # Configure uniform row weights for equal-sized rows
         for row in range(self.board.rows + 2):  # +2 for buttons and scores
             self.root.grid_rowconfigure(row, weight=1, uniform="row")
 
         # Create buttons for column selection
         for col in range(self.board.cols):
-            btn = tk.Button(self.root, text="↓", command=lambda c=col: self.drop_disc(c), height=2, width=4)
+            btn = tk.Button(
+                self.root, text="↓",
+                command=lambda c=col: self.drop_disc(c),
+                height=2, width=4
+            )
             btn.grid(row=0, column=col, sticky="nsew")
             self.buttons.append(btn)
 
@@ -35,7 +64,8 @@ class Connect4GUI:
         for row in range(self.board.rows):
             row_labels = []
             for col in range(self.board.cols):
-                lbl = tk.Label(self.root, text="⚪", font=("Arial", 20), width=4, height=2, bg="blue", fg="white", relief="ridge", borderwidth=1)
+                lbl = tk.Label(self.root, text="⚪", font=("Arial", 20), width=4, height=2,
+                               bg="blue", fg="white", relief="ridge", borderwidth=1)
                 lbl.grid(row=row + 1, column=col, sticky="nsew")
                 row_labels.append(lbl)
             self.cell_labels.append(row_labels)
@@ -50,25 +80,19 @@ class Connect4GUI:
         self.ai_score_label = tk.Label(self.root, text="AI Score: 0", font=("Arial", 14))
         self.ai_score_label.grid(row=self.board.rows + 2, column=self.board.cols // 2, columnspan=self.board.cols // 2, sticky="e")
 
-
-
     def drop_disc(self, col):
         if self.board.valid_move(col):
             self.board.play_disc(self.current_player, col)
             self.update_board()
             self.update_score_labels()
 
-            # Check if the game is over
             if self.check_winner():
                 return
 
-            # Switch players
             self.current_player = self.game.player2 if self.current_player == self.game.player1 else self.game.player1
 
-            # If AI, make a move automatically
             if self.current_player.is_ai:
                 self.root.after(500, self.ai_move)
-
         else:
             messagebox.showinfo("Invalid Move", f"Column {col} is full. Try a different one!")
 
@@ -90,14 +114,11 @@ class Connect4GUI:
                 elif cell_value == 2:
                     self.cell_labels[row][col].config(text="●", fg="yellow")  # Player 2's disc
 
-
-
     def check_winner(self):
-        # Only check for connected 4 if board is full
         p1_score = self.board.count_connected_fours(self.game.player1.symbol)
         p2_score = self.board.count_connected_fours(self.game.player2.symbol)
 
-        if self.board.is_full():  # Check if the board is full
+        if self.board.is_full():
             if p1_score > p2_score:
                 winner = self.game.player1.name
                 message = f"Game Over! Winner: {winner}"
@@ -106,17 +127,16 @@ class Connect4GUI:
                 message = f"Game Over! Winner: {winner}"
             else:
                 message = "Game Over! It's a draw!"
-
-            messagebox.showinfo("Game Over", message)  # Show game over message
-            self.disable_buttons()  # Disable buttons after game ends
+            messagebox.showinfo("Game Over", message)
+            self.disable_buttons()
             return True
-
-        return False  # Return False if the game is not over
-
+        return False
 
     def update_score_labels(self):
-        self.human_score_label.config(text=f"Human Score: { self.board.count_connected_fours(self.game.player1.symbol)}")
-        self.ai_score_label.config(text=f"AI Score: {self.board.count_connected_fours(self.game.player2.symbol)}")
+        self.human_score_label.config(
+            text=f"Human Score: {self.board.count_connected_fours(self.game.player1.symbol)}")
+        self.ai_score_label.config(
+            text=f"AI Score: {self.board.count_connected_fours(self.game.player2.symbol)}")
 
     def disable_buttons(self):
         for btn in self.buttons:
@@ -126,15 +146,13 @@ class Connect4GUI:
         self.board.board = np.zeros((self.board.rows, self.board.cols), dtype=int)
         self.current_player = self.game.player1
         self.update_board()
-        self.update_score_labels()  # Reset score labels
+        self.update_score_labels()
         for btn in self.buttons:
             btn.config(state=tk.NORMAL)
 
 
-# Running the GUI application
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Connect 4")
-    game_instance = Game(algorithm="minimax")  # Use minimax or alphabeta as desired
-    app = Connect4GUI(root, game_instance)
+    app = Connect4GUI(root)
     root.mainloop()
