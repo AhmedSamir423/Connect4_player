@@ -187,7 +187,4 @@ class Player:
                     best_move = col
 
         print(f"{prefix}Best expected score: {best_score}, Move: {best_move}\n")
-        return best_score, best_move
- 
-
-
+        return best_score, best_move  
