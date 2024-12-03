@@ -12,6 +12,8 @@ class Connect4GUI:
         self.current_player = game.current_player
         self.buttons = []
         self.create_widgets()
+        if self.current_player.is_ai:
+            self.ai_move()
 
     def create_widgets(self):
         # Configure uniform column weights for equal-sized columns
