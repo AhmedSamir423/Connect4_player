@@ -43,21 +43,29 @@ class Board:
         return count == 4
 
     def count_connected_fours(self, player_symbol):
-        """Count all connected fours for the given player symbol."""
         count = 0
+
         for row in range(self.rows):
             for col in range(self.cols):
                 if self.board[row][col] == player_symbol:
-                    # Check all directions
-                    if self.check_line(row, col, 0, 1, player_symbol):  # Horizontal
+                    # Horizontal check (only if enough space to the right)
+                    if col + 3 < self.cols and self.check_line(row, col, 0, 1, player_symbol):
                         count += 1
-                    if self.check_line(row, col, 1, 0, player_symbol):  # Vertical
+                    
+                    # Vertical check (only if enough space below)
+                    if row + 3 < self.rows and self.check_line(row, col, 1, 0, player_symbol):
                         count += 1
-                    if self.check_line(row, col, 1, 1, player_symbol):  # Diagonal /
+                    
+                    # Diagonal / check (space for diagonal upwards to the right)
+                    if row + 3 < self.rows and col + 3 < self.cols and self.check_line(row, col, 1, 1, player_symbol):
                         count += 1
-                    if self.check_line(row, col, 1, -1, player_symbol):  # Diagonal \
+                    
+                    # Diagonal \ check (space for diagonal downwards to the left)
+                    if row + 3 < self.rows and col - 3 >= 0 and self.check_line(row, col, 1, -1, player_symbol):
                         count += 1
+
         return count
+
 
     def evaluate_board(self, ai_symbol, opponent_symbol):
         """Evaluate the board with a more detailed heuristic."""
